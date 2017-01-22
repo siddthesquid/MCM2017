@@ -22,10 +22,10 @@ public class Highway {
 	public void simulate(int steps){
 		// UPDATE EACH CAR'S LANE
 		int columns = highway.size();
+		int lanes = highway.get(0).size();
 		for(int i=0; i<columns; i++){
 			ArrayList<HighwayGridObject> column = highway.get(i);
-			int lanes = column.size();
-			for(int j=0; j<lanes){
+			for(int j=0; j<lanes;){
 				HighwayGridObject spot = column.get(j);
 				if(spot.hasCar){
 					Car car = spot.car;
@@ -36,50 +36,50 @@ public class Highway {
 						if(!highway.get(i+k).get(j).hasCar && highway.get(i+k).get(j).openSpace){
 							space ++;
 						}
-						if(!highway.get(i).get(j+1).hasCar && highway.get(i).get(j+1).openSpace && !highway.get(i+k).get(j+1).hasCar && highway.get(i).get(j+1).openSpace){
+						if(j<=lanes-1 && !highway.get(i).get(j+1).hasCar && highway.get(i).get(j+1).openSpace && !highway.get(i+k).get(j+1).hasCar && highway.get(i).get(j+1).openSpace){
 							Rspace ++;
 						}
-						if(!highway.get(i).get(j-1).hasCar && highway.get(i).get(j-1).openSpace && !highway.get(i+k).get(j-1).hasCar && highway.get(i+k).get(j-1).openSpace){
+						if(j>=1 && !highway.get(i).get(j-1).hasCar && highway.get(i).get(j-1).openSpace && !highway.get(i+k).get(j-1).hasCar && highway.get(i+k).get(j-1).openSpace){
 							Lspace ++;
 						}
 					}
+					boolean Rchange = false;
+					int new_lane = j;
 					if(Rspace>space && Math.random() < Car.CHANGE_PROB){
-						car.Rchange = true;
-						column.get(j+1)
-						new_spot.car = car;
-						spot.car = null;
+						Rchange = true;
+						new_lane++;
 						j++;
 					}
-					if(!car.Rchange && Lspace>space && Math.random() < Car.CHANGE_PROB){
-						HighwayGridObject new_spot = column.get(j-1);
-						new_spot.car = car;
-						spot.car = null;
-						car.Rchange = false;
+					if(!Rchange && Lspace>space && Math.random() < Car.CHANGE_PROB){
+						new_lane--;
 					}
+					spot.car = null;
+					spot.hasCar = false;
+					HighwayGridObject new_spot = column.get(new_lane);
+					new_spot.car = car;
+					new_spot.hasCar = true;
 				}
 				j++;
 			}
+		}
 		// update each car's velocity
-		for(int j=0; j<lanes; j++){
-			int lanes = highway.get(1).size();
-			for(int i=0; i<columns){
-				HighwayGridObject spot = highway.get(i).get(j);
+		for(int m=0; m<lanes; m++){
+			for(int n=0; n<columns;){
+				HighwayGridObject spot = highway.get(n).get(m);
 				if(spot.hasCar){
 					Car car = spot.car;
 					int space = 0;
-					int Lspace = 0;
-					int Rspace = 0;
 					for(int k=1;k<=Car.MAX_SPEED;k++){
-						if(!highway.get(i+k).get(j).hasCar && highway.get(i+k).get(j).openSpace){
+						if(!highway.get(n+k).get(m).hasCar && highway.get(n+k).get(m).openSpace){
 							space ++;
 						}
 					}
 				car.updateVelocity(space);
-				HighwayGridObject new_spot = highway.get(i+car.velocity).get(j);
+				HighwayGridObject new_spot = highway.get(n+car.velocity).get(m);
 				new_spot.car = car;
+				new_spot.hasCar = true;
 				spot.car = null;
-				i = i+car.velocity;
-				}
+				n = n+car.velocity+1;
 				}
 			}
 		}
