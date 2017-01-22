@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 
 public class Highway {
-	
+	public int maxLanes = 0;
 	ArrayList<ArrayList<HighwayGridObject>> highway;
 	
 	public Highway(){
@@ -15,17 +15,19 @@ public class Highway {
 			for(int j = 0; j < numLanes; j++){
 				cellColumn.add(new HighwayGridObject(true));
 			}
+			if(numLanes>Highway.maxLanes){
+				Highway.maxLanes = numLanes;
+			}
 			highway.add(cellColumn);
 		}
 	}
 	
 	public void simulate(int steps){
-		// UPDATE EACH CAR'S LANE
+		// UPDATE EACH CAR'S LANE, i.e. IMPLEMENT LANE SWITCHING
 		int columns = highway.size();
-		int lanes = highway.get(0).size();
 		for(int i=0; i<columns; i++){
 			ArrayList<HighwayGridObject> column = highway.get(i);
-			for(int j=0; j<lanes;){
+			for(int j=0; j<maxLanes;){
 				HighwayGridObject spot = column.get(j);
 				if(spot.hasCar){
 					Car car = spot.car;
@@ -36,7 +38,7 @@ public class Highway {
 						if(!highway.get(i+k).get(j).hasCar && highway.get(i+k).get(j).openSpace){
 							space ++;
 						}
-						if(j<=lanes-1 && !highway.get(i).get(j+1).hasCar && highway.get(i).get(j+1).openSpace && !highway.get(i+k).get(j+1).hasCar && highway.get(i).get(j+1).openSpace){
+						if(j<=maxLanes-1 && !highway.get(i).get(j+1).hasCar && highway.get(i).get(j+1).openSpace && !highway.get(i+k).get(j+1).hasCar && highway.get(i).get(j+1).openSpace){
 							Rspace ++;
 						}
 						if(j>=1 && !highway.get(i).get(j-1).hasCar && highway.get(i).get(j-1).openSpace && !highway.get(i+k).get(j-1).hasCar && highway.get(i+k).get(j-1).openSpace){
@@ -62,8 +64,8 @@ public class Highway {
 				j++;
 			}
 		}
-		// update each car's velocity
-		for(int m=0; m<lanes; m++){
+		// update each car's velocity and position
+		for(int m=0; m<maxLanes; m++){
 			for(int n=0; n<columns;){
 				HighwayGridObject spot = highway.get(n).get(m);
 				if(spot.hasCar){
