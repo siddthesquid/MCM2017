@@ -27,7 +27,7 @@ public class TrafficSimulator {
 			}
 		}
 		
-		Highway highway = new Highway(segments);
+		Highway highway = new Highway(segments,1);
 //		highway.addSlowdown(100, 200, 1);
 		
 	    GUISimulator gs = new GUISimulator();
@@ -35,7 +35,7 @@ public class TrafficSimulator {
 	    gs.updateHighway(highway, 0, 6000);
 	    
 		for(int i = 0; i < iters; i++){
-			Thread.sleep(1000);
+			Thread.sleep(500);
 			highway.simulate();
 			gs.updateHighway(highway, 0, 6000);
 //			System.out.println(highway.numCars);

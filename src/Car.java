@@ -6,7 +6,7 @@ public class Car {
 	public static final double DECEL_PROB = 0.25;
 	public static final double CHANGE_PROB = 0.5;
 	public static final int CAR_WIDTH = 15;
-	public static final double AUTO_PROB = .5;
+	public static final double AUTO_PROB = .9;
 	
 	public int velocity;
 	public boolean autonomous;
@@ -33,7 +33,14 @@ public class Car {
 		velocity = Math.min(Math.min(velocity, followingDistance), MAX_SPEED);
 		if(velocity >= 2 && Math.random() < DECEL_PROB) velocity--;
 		
-		distance+=CAR_WIDTH;
+		distance+=CAR_WIDTH * velocity;
+		time+=1;
+	}
+	
+	public void updateVelocity(int followingDistance, int nextVelocity){
+		velocity = Math.min(MAX_SPEED, followingDistance + nextVelocity);
+		
+		distance+=CAR_WIDTH * velocity;
 		time+=1;
 	}
 	

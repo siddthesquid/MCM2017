@@ -12,8 +12,9 @@ public class Highway {
 	ArrayList<Double> dieRates;
 	ArrayList<Integer> slowdowns;
 	double initPopRate = -1;
+	int policy;
 	
-	public Highway(ArrayList<Segment> segments){
+	public Highway(ArrayList<Segment> segments, int policy){
 		highway = new ArrayList<ArrayList<HighwayGridObject>>();
 		exitLane = new ArrayList<HighwayExitGridObject>();
 		segmentEnds = new ArrayList<Integer>();
@@ -25,6 +26,7 @@ public class Highway {
 			}
 			addSegment(segment.getFeet(),segment.getLanes(),segment.getTrafficVolume());
 		}
+		this.policy = policy;
 		System.out.println(segmentEnds);
 	}
 	
@@ -98,12 +100,23 @@ public class Highway {
 	}
 	
 	private int getFollowingDistance(int column, int lane){
+
 		if(lane<0) return 0;
 		if(lane >= maxLanes || !highway.get(column).get(lane).openSpace) return 0;
 		int space = 1;
 		while(space <= Car.MAX_SPEED && space + column < highway.size() && !highway.get(column+space).get(lane).hasCar && highway.get(column+space).get(lane).openSpace) space++;
 		return space-1;
 	} 
+	
+	private int getFollowingVelocity(int column, int lane){
+		int space = 1;
+		while(space <= Car.MAX_SPEED && space + column < highway.size() && !highway.get(column+space).get(lane).hasCar && highway.get(column+space).get(lane).openSpace) space++;
+		if(space + column < highway.size() && highway.get(column+space).get(lane).hasCar) {
+			if(highway.get(column+space).get(lane).car.autonomous) return highway.get(column+space).get(lane).car.velocity;
+			else return Math.max(highway.get(column+space).get(lane).car.velocity -1,0);
+		}
+		return 0;
+	}
 	
 	private int getFollowingDistanceExiting(int column){
 		if(!exitLane.get(column).openSpace) return 0;
@@ -169,15 +182,91 @@ public class Highway {
 		}
 	}
 	
+//	private void simNasch(){
+//		int columns = highway.size();
+//		for(int m=0; m<maxLanes; m++){
+//			for(int n=0; n<columns;n++){
+//				HighwayGridObject spot = highway.get(n).get(m);
+//				if(spot.hasCar){
+//					Car car = spot.deleteCar();
+//					int space = getFollowingDistance(n, m);
+//					if(car.autonomous){
+//						car.updateVelocity(followingDistance);
+//					} else {
+//						car.updateVelocity(Math.min(slowdowns.get(n),space));
+//					}
+//					int newX = n + car.velocity;
+//					if(!(newX >= columns - 2)){
+//						HighwayGridObject new_spot = highway.get(newX).get(m);
+//						new_spot.addCar(car);
+//						int newSeg = getSegment(newX);
+//						car.updateSegment(newSeg, dieRates.get(newSeg));
+//					} else {
+//						numCars--;
+//					}
+//					n = newX;
+//				}
+//			}
+//		}
+//		
+//		for(int n = 0; n < columns; n++){
+//			HighwayExitGridObject spot = exitLane.get(n);
+//			if(spot.hasCar){
+//				Car car = spot.deleteCar();
+//				int space = getFollowingDistanceExiting(n);
+//				car.updateVelocity(Math.min(slowdowns.get(n),space));
+//				int newX = n + car.velocity;
+//				if(!(newX >= columns - 2 || (car.exiting && getSegment(newX+2) > car.segment))){
+//					HighwayGridObject new_spot = exitLane.get(newX);
+//					new_spot.addCar(car);
+//					int newSeg = getSegment(newX);
+//					car.updateSegment(newSeg, dieRates.get(newSeg));
+//				} else {
+//					numCars--;
+//				}
+//				n = newX;
+//			}
+//		}
+//		
+//		for(int n = 0; n < columns; n++){
+//			if(exitLane.get(n).openSpace && !exitLane.get(n).hasCar){
+//				exitLane.get(n).updateSpawn();
+//			}
+//		}
+//		
+//		for(int m = 0; m < maxLanes; m++){
+//			HighwayGridObject hgo = highway.get(0).get(m);
+//			if(hgo.openSpace && Math.random()<initPopRate){
+//				Car newCar = new Car(Car.DEF_SPEED,false,-1);
+//				newCar.updateSegment(0, dieRates.get(0));
+//				hgo.addCar(newCar);
+//			}
+//		}
+//		
+//	}
+	
 	private void simNasch(){
 		int columns = highway.size();
 		for(int m=0; m<maxLanes; m++){
-			for(int n=0; n<columns;n++){
+			for(int n=columns - 1; n>=0;n--){
+				HighwayGridObject spot = highway.get(n).get(m);
+				if(spot.hasCar){
+					Car car = spot.car;
+					int space = getFollowingDistance(n, m);
+					if(car.autonomous){
+						car.updateVelocity(Math.min(slowdowns.get(n),space),getFollowingVelocity(n,m));
+					} else {
+						car.updateVelocity(Math.min(slowdowns.get(n),space));
+					}
+				}
+			}
+		}
+		
+		for(int m=0; m<maxLanes; m++){
+			for(int n=columns - 1; n>=0;n--){
 				HighwayGridObject spot = highway.get(n).get(m);
 				if(spot.hasCar){
 					Car car = spot.deleteCar();
-					int space = getFollowingDistance(n, m);
-					car.updateVelocity(Math.min(slowdowns.get(n),space));
 					int newX = n + car.velocity;
 					if(!(newX >= columns - 2)){
 						HighwayGridObject new_spot = highway.get(newX).get(m);
@@ -187,7 +276,6 @@ public class Highway {
 					} else {
 						numCars--;
 					}
-					n = newX;
 				}
 			}
 		}
