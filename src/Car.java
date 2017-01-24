@@ -6,7 +6,7 @@ public class Car {
 	public static final double DECEL_PROB = 0.25;
 	public static final double CHANGE_PROB = 0.5;
 	public static final int CAR_WIDTH = 15;
-	public static final double AUTO_PROB = .9;
+	public static double autoProb = .0;
 	
 	public int velocity;
 	public boolean autonomous;
@@ -15,9 +15,9 @@ public class Car {
 	public boolean exiting;
 	public int segment;
 	
-	public Car(int initVelocity, boolean autonomous, int segment){
+	public Car(int initVelocity, double autoProb, int segment){
 		velocity = initVelocity;
-		if(Math.random() < AUTO_PROB){
+		if(Math.random() < autoProb){
 			this.autonomous = true;
 		} else {
 			this.autonomous = false;
@@ -29,12 +29,14 @@ public class Car {
 	}
 	
 	public void updateVelocity(int followingDistance){
+		int oldVelocity = velocity;
 		velocity += 1;
 		velocity = Math.min(Math.min(velocity, followingDistance), MAX_SPEED);
 		if(velocity >= 2 && Math.random() < DECEL_PROB) velocity--;
 		
 		distance+=CAR_WIDTH * velocity;
 		time+=1;
+		Highway.totalAcceleration += Math.abs(oldVelocity - velocity);
 	}
 	
 	public void updateVelocity(int followingDistance, int nextVelocity){

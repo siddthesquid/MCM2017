@@ -5,6 +5,13 @@ public class Highway {
 	public static final int MAX_LANES = 5;
 	public int numCars;
 	
+	public static int totalAcceleration;
+	public int totalDistance;
+	public int totalTime;
+	public int maxCars;
+	public double populationRate;
+	
+	
 	public int maxLanes = 0;
 	ArrayList<ArrayList<HighwayGridObject>> highway;
 	ArrayList<HighwayExitGridObject> exitLane;
@@ -13,8 +20,11 @@ public class Highway {
 	ArrayList<Integer> slowdowns;
 	double initPopRate = -1;
 	int policy;
+	double autoProb;
 	
-	public Highway(ArrayList<Segment> segments, int policy){
+	public Highway(ArrayList<Segment> segments, int policy, double popRate, double autoProb){
+		this.autoProb = autoProb;
+		populationRate = popRate;
 		highway = new ArrayList<ArrayList<HighwayGridObject>>();
 		exitLane = new ArrayList<HighwayExitGridObject>();
 		segmentEnds = new ArrayList<Integer>();
@@ -27,7 +37,7 @@ public class Highway {
 			addSegment(segment.getFeet(),segment.getLanes(),segment.getTrafficVolume());
 		}
 		this.policy = policy;
-		System.out.println(segmentEnds);
+		maxCars = numCars;
 	}
 	
 	public void addSlowdown(int from, int to, int speed){
@@ -41,17 +51,20 @@ public class Highway {
 	}
 	
 	private double getSpawnRate(int feet, int trafficVolume){
-		if(feet/7%2==0) return .01;
-		else return 0;
+		return 0;
+//		if(feet/7%2==0) return .01;
+//		else return 0;
 	}
 	
 	private double getDieRate(int feet, int trafficVolume){
-		if(feet/7%2==0) return 0;
-		else return .25;
+		return 0;
+//		if(feet/7%2==0) return 0;
+//		else return .25;
 	}
 	
 	private double getPopulateRate(int feet, int trafficVolume){
-		return .2;
+		return populationRate;
+//		return .4;
 	}
 	
 	private int getSegment(int column){
@@ -76,7 +89,7 @@ public class Highway {
 				} else {
 					HighwayGridObject hgo = new HighwayGridObject(true);
 					if(Math.random() < getPopulateRate(feet,trafficVolume)) {
-						hgo.addCar(new Car(Car.DEF_SPEED,false,segmentEnds.size()));
+						hgo.addCar(new Car(Car.DEF_SPEED,autoProb,segmentEnds.size()));
 						numCars++;
 					}
 					cellColumn.add(hgo);
@@ -124,6 +137,12 @@ public class Highway {
 		while(space <= Car.MAX_SPEED && space + column < exitLane.size() && !exitLane.get(column+space).hasCar && exitLane.get(column+space).openSpace) space++;
 		return space-1;
 	} 
+	
+	private void removeCar(Car c){
+		numCars--;
+		totalDistance += c.distance;
+		totalTime += c.time;
+	}
 
 	private void simChangeLanes(){
 		int columns = highway.size();
@@ -182,69 +201,6 @@ public class Highway {
 		}
 	}
 	
-//	private void simNasch(){
-//		int columns = highway.size();
-//		for(int m=0; m<maxLanes; m++){
-//			for(int n=0; n<columns;n++){
-//				HighwayGridObject spot = highway.get(n).get(m);
-//				if(spot.hasCar){
-//					Car car = spot.deleteCar();
-//					int space = getFollowingDistance(n, m);
-//					if(car.autonomous){
-//						car.updateVelocity(followingDistance);
-//					} else {
-//						car.updateVelocity(Math.min(slowdowns.get(n),space));
-//					}
-//					int newX = n + car.velocity;
-//					if(!(newX >= columns - 2)){
-//						HighwayGridObject new_spot = highway.get(newX).get(m);
-//						new_spot.addCar(car);
-//						int newSeg = getSegment(newX);
-//						car.updateSegment(newSeg, dieRates.get(newSeg));
-//					} else {
-//						numCars--;
-//					}
-//					n = newX;
-//				}
-//			}
-//		}
-//		
-//		for(int n = 0; n < columns; n++){
-//			HighwayExitGridObject spot = exitLane.get(n);
-//			if(spot.hasCar){
-//				Car car = spot.deleteCar();
-//				int space = getFollowingDistanceExiting(n);
-//				car.updateVelocity(Math.min(slowdowns.get(n),space));
-//				int newX = n + car.velocity;
-//				if(!(newX >= columns - 2 || (car.exiting && getSegment(newX+2) > car.segment))){
-//					HighwayGridObject new_spot = exitLane.get(newX);
-//					new_spot.addCar(car);
-//					int newSeg = getSegment(newX);
-//					car.updateSegment(newSeg, dieRates.get(newSeg));
-//				} else {
-//					numCars--;
-//				}
-//				n = newX;
-//			}
-//		}
-//		
-//		for(int n = 0; n < columns; n++){
-//			if(exitLane.get(n).openSpace && !exitLane.get(n).hasCar){
-//				exitLane.get(n).updateSpawn();
-//			}
-//		}
-//		
-//		for(int m = 0; m < maxLanes; m++){
-//			HighwayGridObject hgo = highway.get(0).get(m);
-//			if(hgo.openSpace && Math.random()<initPopRate){
-//				Car newCar = new Car(Car.DEF_SPEED,false,-1);
-//				newCar.updateSegment(0, dieRates.get(0));
-//				hgo.addCar(newCar);
-//			}
-//		}
-//		
-//	}
-	
 	private void simNasch(){
 		int columns = highway.size();
 		for(int m=0; m<maxLanes; m++){
@@ -274,7 +230,7 @@ public class Highway {
 						int newSeg = getSegment(newX);
 						car.updateSegment(newSeg, dieRates.get(newSeg));
 					} else {
-						numCars--;
+						removeCar(car);
 					}
 				}
 			}
@@ -293,7 +249,7 @@ public class Highway {
 					int newSeg = getSegment(newX);
 					car.updateSegment(newSeg, dieRates.get(newSeg));
 				} else {
-					numCars--;
+					removeCar(car);
 				}
 				n = newX;
 			}
@@ -301,18 +257,19 @@ public class Highway {
 		
 		for(int n = 0; n < columns; n++){
 			if(exitLane.get(n).openSpace && !exitLane.get(n).hasCar){
-				exitLane.get(n).updateSpawn();
+				exitLane.get(n).updateSpawn(autoProb);
 			}
 		}
 		
-		for(int m = 0; m < maxLanes; m++){
-			HighwayGridObject hgo = highway.get(0).get(m);
-			if(hgo.openSpace && Math.random()<initPopRate){
-				Car newCar = new Car(Car.DEF_SPEED,false,-1);
-				newCar.updateSegment(0, dieRates.get(0));
-				hgo.addCar(newCar);
-			}
-		}
+//		for(int m = 0; m < maxLanes; m++){
+//			HighwayGridObject hgo = highway.get(0).get(m);
+//			if(hgo.openSpace && Math.random()<initPopRate){
+//				Car newCar = new Car(Car.DEF_SPEED,false,-1);
+//				newCar.updateSegment(0, dieRates.get(0));
+//				hgo.addCar(newCar);
+//				numCars++;
+//			}
+//		}
 		
 	}
 	

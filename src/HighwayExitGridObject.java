@@ -10,8 +10,8 @@ public class HighwayExitGridObject extends HighwayGridObject {
 		this.spawnRate = spawnRate;
 	}
 	
-	public void updateSpawn(){
-		if(Math.random() < spawnRate) addCar(new Car(Car.DEF_SPEED,false,segment));
+	public void updateSpawn(double autoProb){
+		if(Math.random() < spawnRate) addCar(new Car(Car.DEF_SPEED,autoProb,segment));
 	}
 
 }
